@@ -1,7 +1,7 @@
 // const Matter = require('matter-js');
 
 function mulberry32(a) {
-	return function() {
+	return function () {
 		let t = a += 0x6D2B79F5;
 		t = Math.imul(t ^ t >>> 15, t | 1);
 		t ^= t + Math.imul(t ^ t >>> 7, t | 61);
@@ -20,6 +20,13 @@ const wallPad = 64;
 const loseHeight = 84;
 const statusBarHeight = 48;
 const previewBallHeight = 32;
+
+
+//relevent game config
+const reloadTime = 500;
+const autoclickTime = 1000;
+const newGameTime = 5000;
+
 const friction = {
 	friction: 0.006,
 	frictionStatic: 0.006,
@@ -35,8 +42,8 @@ const GameStates = {
 };
 
 const Game = {
-	width: 640,
-	height: 960,
+	width: screen.availWidth,
+	height: screen.availHeight,
 	elements: {
 		canvas: document.getElementById('game-canvas'),
 		ui: document.getElementById('game-ui'),
@@ -75,19 +82,22 @@ const Game = {
 
 		Game.score = score;
 		Game.elements.score.innerText = Game.score;
+		if (Game.score > Game.cache.highscore) {
+			Game.elements.statusValue.innerText = Game.score;
+		}
 	},
 
 	fruitSizes: [
-		{ radius: 24,  scoreValue: 1,  img: './assets/img/circle0.png'  },
-		{ radius: 32,  scoreValue: 3,  img: './assets/img/circle1.png'  },
-		{ radius: 40,  scoreValue: 6,  img: './assets/img/circle2.png'  },
-		{ radius: 56,  scoreValue: 10, img: './assets/img/circle3.png'  },
-		{ radius: 64,  scoreValue: 15, img: './assets/img/circle4.png'  },
-		{ radius: 72,  scoreValue: 21, img: './assets/img/circle5.png'  },
-		{ radius: 84,  scoreValue: 28, img: './assets/img/circle6.png'  },
-		{ radius: 96,  scoreValue: 36, img: './assets/img/circle7.png'  },
-		{ radius: 128, scoreValue: 45, img: './assets/img/circle8.png'  },
-		{ radius: 160, scoreValue: 55, img: './assets/img/circle9.png'  },
+		{ radius: 24, scoreValue: 1, img: './assets/img/circle0.png' },
+		{ radius: 32, scoreValue: 3, img: './assets/img/circle1.png' },
+		{ radius: 40, scoreValue: 6, img: './assets/img/circle2.png' },
+		{ radius: 56, scoreValue: 10, img: './assets/img/circle3.png' },
+		{ radius: 64, scoreValue: 15, img: './assets/img/circle4.png' },
+		{ radius: 72, scoreValue: 21, img: './assets/img/circle5.png' },
+		{ radius: 84, scoreValue: 28, img: './assets/img/circle6.png' },
+		{ radius: 96, scoreValue: 36, img: './assets/img/circle7.png' },
+		{ radius: 128, scoreValue: 45, img: './assets/img/circle8.png' },
+		{ radius: 160, scoreValue: 55, img: './assets/img/circle9.png' },
 		{ radius: 192, scoreValue: 66, img: './assets/img/circle10.png' },
 	],
 	currentFruitSize: 0,
@@ -131,20 +141,11 @@ const Game = {
 		Game.elements.ui.style.display = 'none';
 		Game.fruitsMerged = Array.apply(null, Array(Game.fruitSizes.length)).map(() => 0);
 
-		const menuMouseDown = function () {
-			if (mouseConstraint.body === null || mouseConstraint.body?.label !== 'btn-start') {
-				return;
-			}
-
-			Events.off(mouseConstraint, 'mousedown', menuMouseDown);
-			Game.startGame();
-		}
-
-		Events.on(mouseConstraint, 'mousedown', menuMouseDown);
+		setTimeout(Game.startGame, 1000);
 	},
 
 	startGame: function () {
-		Game.sounds.click.play();
+		// Game.sounds.click.play();
 
 		Composite.remove(engine.world, menuStatics);
 		Composite.add(engine.world, gameStatics);
@@ -160,16 +161,9 @@ const Game = {
 			Game.stateIndex = GameStates.READY;
 		}, 250);
 
-		Events.on(mouseConstraint, 'mouseup', function (e) {
-			Game.addFruit(e.mouse.position.x);
-		});
 
-		Events.on(mouseConstraint, 'mousemove', function (e) {
-			if (Game.stateIndex !== GameStates.READY) return;
-			if (Game.elements.previewBall === null) return;
+		setInterval(() => { Game.addFruit(Game.width / 2) }, autoclickTime);
 
-			Game.elements.previewBall.position.x = e.mouse.position.x;
-		});
 
 		Events.on(engine, 'collisionStart', function (e) {
 			for (let i = 0; i < e.pairs.length; i++) {
@@ -209,7 +203,7 @@ const Game = {
 				bodyA.popped = true;
 				bodyB.popped = true;
 
-				Game.sounds[`pop${bodyA.sizeIndex}`].play();
+				// Game.sounds[`pop${bodyA.sizeIndex}`].play();
 				Composite.remove(engine.world, [bodyA, bodyB]);
 				Composite.add(engine.world, Game.generateFruitBody(midPosX, midPosY, newSize));
 				Game.addPop(midPosX, midPosY, bodyA.circleRadius);
@@ -243,6 +237,8 @@ const Game = {
 		Game.elements.end.style.display = 'flex';
 		runner.enabled = false;
 		Game.saveHighscore();
+
+		setTimeout(() => { location.reload() }, newGameTime);
 	},
 
 	// Returns an index, or null
@@ -270,7 +266,7 @@ const Game = {
 	addFruit: function (x) {
 		if (Game.stateIndex !== GameStates.READY) return;
 
-		Game.sounds.click.play();
+		// Game.sounds.click.play();
 
 		Game.stateIndex = GameStates.DROP;
 		const latestFruit = Game.generateFruitBody(x, previewBallHeight, Game.currentFruitSize);
@@ -281,7 +277,7 @@ const Game = {
 		Game.calculateScore();
 
 		Composite.remove(engine.world, Game.elements.previewBall);
-		Game.elements.previewBall = Game.generateFruitBody(render.mouse.position.x, previewBallHeight, Game.currentFruitSize, {
+		Game.elements.previewBall = Game.generateFruitBody(Game.width / 2, previewBallHeight, Game.currentFruitSize, {
 			isStatic: true,
 			collisionFilter: { mask: 0x0040 }
 		});
@@ -291,7 +287,7 @@ const Game = {
 				Composite.add(engine.world, Game.elements.previewBall);
 				Game.stateIndex = GameStates.READY;
 			}
-		}, 500);
+		}, reloadTime);
 	}
 }
 
@@ -316,8 +312,8 @@ const menuStatics = [
 
 	// Add each fruit in a circle
 	...Array.apply(null, Array(Game.fruitSizes.length)).map((_, index) => {
-		const x = (Game.width / 2) + 192 * Math.cos((Math.PI * 2 * index)/12);
-		const y = (Game.height * 0.4) + 192 * Math.sin((Math.PI * 2 * index)/12);
+		const x = (Game.width / 2) + 192 * Math.cos((Math.PI * 2 * index) / 12);
+		const y = (Game.height * 0.4) + 192 * Math.sin((Math.PI * 2 * index) / 12);
 		const r = 64;
 
 		return Bodies.circle(x, y, r, {
@@ -353,21 +349,10 @@ const gameStatics = [
 	Bodies.rectangle(Game.width + (wallPad / 2), Game.height / 2, wallPad, Game.height, wallProps),
 
 	// Bottom
-	Bodies.rectangle(Game.width / 2, Game.height + (wallPad / 2) - statusBarHeight, Game.width, wallPad, wallProps),
+	Bodies.rectangle(Game.width / 2, Game.height - statusBarHeight, Game.width, wallPad, wallProps),
 ];
 
-// add mouse control
-const mouse = Mouse.create(render.canvas);
-const mouseConstraint = MouseConstraint.create(engine, {
-	mouse: mouse,
-	constraint: {
-		stiffness: 0.2,
-		render: {
-			visible: false,
-		},
-	},
-});
-render.mouse = mouse;
+
 
 Game.initGame();
 
@@ -379,15 +364,15 @@ const resizeCanvas = () => {
 	let newHeight = Game.height;
 	let scaleUI = 1;
 
-	if (screenWidth * 1.5 > screenHeight) {
-		newHeight = Math.min(Game.height, screenHeight);
-		newWidth = newHeight / 1.5;
-		scaleUI = newHeight / Game.height;
-	} else {
-		newWidth = Math.min(Game.width, screenWidth);
-		newHeight = newWidth * 1.5;
-		scaleUI = newWidth / Game.width;
-	}
+	// if (screenWidth * 1.5 > screenHeight) {
+	// 	newHeight = Math.min(Game.height, screenHeight);
+	// 	newWidth = newHeight / 1.5;
+	// 	scaleUI = newHeight / Game.height;
+	// } else {
+	// 	newWidth = Math.min(Game.width, screenWidth);
+	// 	newHeight = newWidth * 1.5;
+	// 	scaleUI = newWidth / Game.width;
+	// }
 
 	render.canvas.style.width = `${newWidth}px`;
 	render.canvas.style.height = `${newHeight}px`;

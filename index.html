@@ -30,18 +30,16 @@
     body {
       background-color: var(--col-bg);
       font-family: 'Azeret Mono', sans-serif;
+      overflow: hidden;
     }
 
     .container {
       width: 100%;
-      max-width: 640px;
       margin: 0 auto;
       height: 100vh;
     }
 
-    #game-canvas {
-      position: relative;
-    }
+
 
     #game-ui {
       position: absolute;
@@ -113,8 +111,7 @@
     #game-status {
       position: absolute;
       left: 0;
-      right: 0;
-      bottom: 0;
+      bottom: 96px;
       height: 48px;
       background-color: var(--col-bg-lighter);
       display: flex;
@@ -155,7 +152,7 @@
         <div id="game-end-container">
           <div id="game-end">
             <div id="game-end-title">Game Over!</div>
-            <a id="game-end-link" href="">Try Again</a>
+            <!-- <a id="game-end-link" href="">Try Again</a> -->
           </div>
         </div>
 
